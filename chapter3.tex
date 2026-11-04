@@ -1,0 +1,38 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{itemsep=2pt,topsep=4pt}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\begin{document}
+
+\setcounter{section}{2}
+\section{Modeling of the Experimental Part}
+
+This chapter defines the model on which all experiments are run. It fixes the network, the stochastic process of the path costs, the switching penalty, the decision problem, the policies that are compared, the metrics, and the way the results are validated. Everything is specified so that each experiment can be reproduced exactly.
+
+\subsection{Network and Candidate Paths}
+
+Let $G = (V, E)$ be a directed graph with a source $s$ and a destination $d$. A single flow must be routed from $s$ to $d$. Time is discrete, $t = 0, 1, 2, \dots$ The set of candidate paths is $\mathcal{P} = \{P_1, \dots, P_k\}$, where each $P_i \subseteq E$ is a simple $s$--$d$ path. The candidate set is given (for example the $k$ shortest paths) and is not part of the decision. Let $E' = P_1 \cup \dots \cup P_k$ be the set of links used by at least one candidate, and $m = \abs{E'}$.
+
+The overlap between two paths is measured with the Jaccard index:
+\begin{equation}
+  J(P_i, P_j) = \frac{\abs{P_i \cap P_j}}{\abs{P_i \cup P_j}},
+  \label{eq:jaccard}
+\end{equation}
+so $J = 1$ for identical paths and $J = 0$ for link-disjoint paths.
+
+\end{document}
