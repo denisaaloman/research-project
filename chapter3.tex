@@ -34,5 +34,46 @@ The overlap between two paths is measured with the Jaccard index:
   \label{eq:jaccard}
 \end{equation}
 so $J = 1$ for identical paths and $J = 0$ for link-disjoint paths.
-
+\subsection{Stochastic Model of Path Costs}
+ 
+Each link $e \in E'$ has a congestion state $x_e(t) \in \{0, 1\}$, where $0$ means free and $1$ means congested. The states of the links are independent two-state Markov chains with the same transition matrix:
+\begin{equation}
+  \Pr[x_e(t+1) = 1 \mid x_e(t) = 0] = p, \qquad
+  \Pr[x_e(t+1) = 0 \mid x_e(t) = 1] = q.
+  \label{eq:markov}
+\end{equation}
+The cost of a link is $c_e(x) = c_e^0$ if $x = 0$ and $c_e^0 + \delta$ if $x = 1$, where $c_e^0$ is the free-flow cost and $\delta > 0$ is the congestion penalty. The cost of a path is the sum of its link costs:
+\begin{equation}
+  C_i(x) = \sum_{e \in P_i} c_e(x_e), \qquad x \in \{0,1\}^m.
+  \label{eq:pathcost}
+\end{equation}
+The stationary probability of congestion is $\pi = p/(p+q)$. The speed at which costs change is controlled by the second eigenvalue of the chain, $\rho = 1 - p - q$: a value of $\rho$ close to $1$ means slowly changing (autocorrelated) costs, and $\rho$ close to $0$ or negative means fast fluctuations. In the experiments $\pi$ is kept fixed and $\rho$ is varied, so that the two effects are not mixed.
+ 
+\subsection{Path-Switching Penalty}
+ 
+When the flow moves from path $P_i$ to path $P_j$, a one-time penalty $s(i,j)$ is paid, with $s(i,i) = 0$. Two models are used, with the same maximum value $s_0$ so that they can be compared directly:
+\begin{itemize}
+  \item Constant penalty (M1): $s(i,j) = s_0$ for all $i \neq j$.
+  \item Overlap-based penalty (M2): $s(i,j) = s_0 \cdot (1 - J(P_i, P_j))$.
+\end{itemize}
+In M2 the penalty is proportional to the fraction of links that change, in the spirit of the reconfiguration overhead counted in changed links by Kikuchi et al.\ [2]. Switching between similar paths is cheap, and switching between disjoint paths costs the full $s_0$.
+ 
+\subsection{Decision Problem as a Markov Decision Process}
+ 
+At each time step the controller observes the current path $i$ and the congestion vector $x$, and chooses the path $j$ for the next step ($j = i$ means keep). The MDP is defined by:
+\begin{itemize}
+  \item State: $(i, x) \in S = \{1, \dots, k\} \times \{0,1\}^m$, so $\abs{S} = k \cdot 2^m$.
+  \item Action: $j \in \{1, \dots, k\}$.
+  \item Cost: $c((i,x), j) = s(i,j) + C_j(x)$.
+  \item Transition: $(i,x) \to (j,x')$ with probability $\Pr(x,x') = \prod_{e} (\text{link transition probabilities})$. The congestion process does not depend on the action.
+  \item Criterion: expected discounted cost with discount factor $\gamma \in (0,1)$.
+\end{itemize}
+The optimal value function satisfies the Bellman equation:
+\begin{equation}
+  V^*(i,x) = \min_{j} \Bigl[\, s(i,j) + C_j(x) + \gamma \sum_{x'} \Pr(x,x')\, V^*(j,x') \Bigr].
+  \label{eq:bellman}
+\end{equation}
+The operator on the right-hand side is a $\gamma$-contraction in the sup norm, so value iteration converges to the unique solution $V^*$ [7, 8]. The iteration stops when $\norm{V_{n+1} - V_n}_\infty < \varepsilon (1-\gamma)/(2\gamma)$, which guarantees that the resulting policy is $\varepsilon$-optimal. The optimal policy is the minimizing action in \eqref{eq:bellman}.
+ 
+For a given distribution $\mu$ of the initial state (the initial path is the cheapest path on average, and $x$ follows the stationary distribution), the performance of a policy is $\mathcal{J}(\mu) = \sum_{s} \mu(s)\, V(s)$.
 \end{document}
