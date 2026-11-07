@@ -34,8 +34,9 @@ The overlap between two paths is measured with the Jaccard index:
   \label{eq:jaccard}
 \end{equation}
 so $J = 1$ for identical paths and $J = 0$ for link-disjoint paths.
+
 \subsection{Stochastic Model of Path Costs}
- 
+
 Each link $e \in E'$ has a congestion state $x_e(t) \in \{0, 1\}$, where $0$ means free and $1$ means congested. The states of the links are independent two-state Markov chains with the same transition matrix:
 \begin{equation}
   \Pr[x_e(t+1) = 1 \mid x_e(t) = 0] = p, \qquad
@@ -48,18 +49,18 @@ The cost of a link is $c_e(x) = c_e^0$ if $x = 0$ and $c_e^0 + \delta$ if $x = 1
   \label{eq:pathcost}
 \end{equation}
 The stationary probability of congestion is $\pi = p/(p+q)$. The speed at which costs change is controlled by the second eigenvalue of the chain, $\rho = 1 - p - q$: a value of $\rho$ close to $1$ means slowly changing (autocorrelated) costs, and $\rho$ close to $0$ or negative means fast fluctuations. In the experiments $\pi$ is kept fixed and $\rho$ is varied, so that the two effects are not mixed.
- 
+
 \subsection{Path-Switching Penalty}
- 
+
 When the flow moves from path $P_i$ to path $P_j$, a one-time penalty $s(i,j)$ is paid, with $s(i,i) = 0$. Two models are used, with the same maximum value $s_0$ so that they can be compared directly:
 \begin{itemize}
   \item Constant penalty (M1): $s(i,j) = s_0$ for all $i \neq j$.
   \item Overlap-based penalty (M2): $s(i,j) = s_0 \cdot (1 - J(P_i, P_j))$.
 \end{itemize}
 In M2 the penalty is proportional to the fraction of links that change, in the spirit of the reconfiguration overhead counted in changed links by Kikuchi et al.\ [2]. Switching between similar paths is cheap, and switching between disjoint paths costs the full $s_0$.
- 
+
 \subsection{Decision Problem as a Markov Decision Process}
- 
+
 At each time step the controller observes the current path $i$ and the congestion vector $x$, and chooses the path $j$ for the next step ($j = i$ means keep). The MDP is defined by:
 \begin{itemize}
   \item State: $(i, x) \in S = \{1, \dots, k\} \times \{0,1\}^m$, so $\abs{S} = k \cdot 2^m$.
@@ -74,6 +75,90 @@ The optimal value function satisfies the Bellman equation:
   \label{eq:bellman}
 \end{equation}
 The operator on the right-hand side is a $\gamma$-contraction in the sup norm, so value iteration converges to the unique solution $V^*$ [7, 8]. The iteration stops when $\norm{V_{n+1} - V_n}_\infty < \varepsilon (1-\gamma)/(2\gamma)$, which guarantees that the resulting policy is $\varepsilon$-optimal. The optimal policy is the minimizing action in \eqref{eq:bellman}.
- 
+
 For a given distribution $\mu$ of the initial state (the initial path is the cheapest path on average, and $x$ follows the stationary distribution), the performance of a policy is $\mathcal{J}(\mu) = \sum_{s} \mu(s)\, V(s)$.
+
+\subsection{Policies Compared}
+
+Let $C_i = C_i(x)$ be the current cost of path $i$ and let $j^* = \argmin_j C_j(x)$ be the currently cheapest path. The policies are:
+\begin{itemize}
+  \item Optimal (OPT): the minimizer of \eqref{eq:bellman}, computed by value iteration. It is the benchmark.
+  \item Never-switch (NS): always keep the current path.
+  \item Greedy (GR): always move to $j^*$, ignoring the penalty.
+  \item Static threshold (TH, parameter $\theta$): switch to $j^*$ if $C_i - C_{j^*} > \theta$, otherwise keep. It represents the rules used in practice [2, 3].
+  \item Hysteresis threshold (HY, parameters $\theta$, $N$): switch to $j^*$ only if the TH condition holds for $N$ consecutive steps. It follows the idea of FlowBender [3] and requires a counter, which is added to the state during simulation.
+  \item Overlap-aware threshold (OA, parameters $\theta_0$, $\alpha$): switch to $j^*$ if $C_i - C_{j^*} > \theta_0 + \alpha \cdot s(i,j^*)$. For $\theta_0 = 0$ and $\alpha = 1$ this is the one-step lookahead rule (it pays the penalty only if it is recovered immediately), related to the least one-step cost policy of Anjali et al.\ [1].
+\end{itemize}
+For TH, HY and OA the parameters are tuned on a grid separately for each scenario, choosing the values that minimize $\mathcal{J}(\mu)$. This gives the best case for each family. If a threshold policy performs badly even with tuned parameters, the failure comes from the structure of the rule, not from a poor choice of $\theta$.
+
+\subsection{Evaluation Metrics}
+
+For a stationary policy $\pi$, the cost $\mathcal{J}^{\pi}(\mu)$ is computed exactly by policy evaluation, by solving the linear system:
+\begin{equation}
+  V^{\pi} = c_{\pi} + \gamma P_{\pi} V^{\pi}, \qquad
+  V^{\pi} = (I - \gamma P_{\pi})^{-1} c_{\pi}.
+  \label{eq:policyeval}
+\end{equation}
+This avoids the noise of simulation for the main results. The metrics are:
+\begin{itemize}
+  \item Optimality gap: $G(\pi) = (\mathcal{J}^{\pi} - \mathcal{J}^*)/\mathcal{J}^*$. The main metric.
+  \item Failure: a scenario is a failure for a policy family if the gap of its best tuned member exceeds $\varepsilon = 5\%$.
+  \item Switching rate: expected number of switches per time step, measured in simulation.
+  \item Oscillation rate: fraction of switches that return to the path left at most $W$ steps earlier ($W = 5$).
+  \item Computation time: run time of value iteration versus the evaluation of a threshold policy.
+\end{itemize}
+
+\subsection{Experimental Design}
+
+The scenarios are defined by the following parameters. Each experiment varies one or two of them and keeps the others at the default values.
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Parameter & Values & Purpose \\
+    \midrule
+    Penalty ratio $s_0/\delta$ & $0.1,\ 0.25,\ 0.5,\ 1,\ 2,\ 4$ & Size of the switching cost relative to the gain \\
+    Persistence $\rho$ & $-0.5,\ 0,\ 0.5,\ 0.8,\ 0.95$ ($\pi$ fixed at $0.3$) & Speed of cost changes \\
+    Penalty model & M1 (constant), M2 (overlap) & Effect of path structure \\
+    Number of paths $k$ & $2,\ 3,\ 4,\ 5$ & Scalability of OPT \\
+    Overlap structure & disjoint, partially shared, mostly shared & How much the penalty varies between pairs \\
+    Discount $\gamma$ & $0.9,\ 0.95,\ 0.99$ & Sensitivity to the horizon \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The planned experiments are:
+\begin{itemize}
+  \item E1, baseline: $k = 2$, model M1. Checks that OPT has a threshold structure and measures the gap of TH, as in Anjali et al.\ [1] and Hamouda [4].
+  \item E2, penalty and persistence sweep: computes the gap of the best TH over the grid $(s_0/\delta, \rho)$ and draws the failure region (RQ1).
+  \item E3, overlap: repeats E2 with M2 on graphs with partially shared paths and compares the failure regions of M1 and M2 (RQ2).
+  \item E4, policy comparison: compares TH, HY and OA against OPT on the same scenarios (RQ3).
+  \item E5, scalability: increases $k$ and $m$, and measures the time of value iteration and the gap of the heuristics (RQ4).
+  \item E6, ablation: removes the overlap term ($\alpha = 0$) and the hysteresis counter ($N = 1$) to measure the contribution of each.
+\end{itemize}
+
+The hypotheses to be tested are formalized as follows.
+\textbf{H1:} for M1 the best threshold stays within $\varepsilon$ of the optimum except for small $s_0/\delta$ combined with high persistence.
+\textbf{H2:} the failure region of M2 contains the failure region of M1 (the same scenarios plus new ones).
+\textbf{H3:} OA reduces the gap of TH in the failure region of M2 below $\varepsilon$ in most scenarios.
+
+\subsection{Data}
+
+The initial study uses synthetic data: the congestion process of Section~3.2 is generated from the Markov chain, and the topologies are small random graphs with a controlled overlap between paths. This gives full control over the parameters and makes the exact optimum computable. For the validation on realistic data, a public backbone topology such as GEANT (used by Kikuchi et al.\ [2]) will be used for the paths, and the parameters $p$ and $q$ will be estimated from measured link load by classifying a link as congested when its utilization exceeds a chosen limit.
+
+\subsection{Validation of the Results}
+
+\begin{itemize}
+  \item Limit cases: for $s_0 = 0$, OPT must coincide with GR; for very large $s_0$, OPT must coincide with NS.
+  \item Known result: for $k = 2$ and M1, OPT must have a threshold structure (the decision depends only on the cost difference), as reported in the literature [1, 4].
+  \item Exact versus simulation: the Monte Carlo estimate of $\mathcal{J}^{\pi}$ ($R = 1000$ runs of $T = 500$ steps) must fall inside its 95\% confidence interval around the value from \eqref{eq:policyeval}.
+  \item Solver agreement: value iteration and policy iteration must return the same policy.
+  \item Robustness: the main conclusions are checked for different values of $\gamma$ and different random topologies, with the mean and standard deviation over 30 topologies.
+\end{itemize}
+
+\subsection{Tools}
+
+The implementation uses Python with NumPy (matrix operations for value iteration and policy evaluation), NetworkX (graphs and candidate paths) and Matplotlib (failure maps). Python was chosen because the state space is small, so the speed of the language is not a limit, and because it makes the code short and easy to check. The alternatives considered are C++ (faster, but slower to develop, and needed only for much larger networks), MATLAB (good for matrices, but a licensed tool) and Julia (fast, but with a smaller ecosystem for graphs). The code and this document are kept in a Git repository.
+
 \end{document}
