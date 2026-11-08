@@ -1,0 +1,81 @@
+a const rho=-0.40 s0=0.25 ns=9.93% gr=1.19% th=0.00%
+a const rho=-0.40 s0=0.50 ns=5.61% gr=2.29% th=0.00%
+a const rho=-0.40 s0=1.00 ns=0.86% gr=7.39% th=0.00%
+a const rho=-0.40 s0=2.00 ns=0.00% gr=25.69% th=0.00%
+a const rho=-0.40 s0=4.00 ns=0.00% gr=64.14% th=0.00%
+a const rho=0.00 s0=0.25 ns=11.11% gr=1.24% th=0.00%
+a const rho=0.00 s0=0.50 ns=7.79% gr=2.41% th=0.00%
+a const rho=0.00 s0=1.00 ns=1.73% gr=4.54% th=0.00%
+a const rho=0.00 s0=2.00 ns=0.00% gr=18.30% th=0.00%
+a const rho=0.00 s0=4.00 ns=0.00% gr=49.35% th=0.00%
+a const rho=0.50 s0=0.25 ns=12.65% gr=1.02% th=0.00%
+a const rho=0.50 s0=0.50 ns=10.74% gr=2.01% th=0.00%
+a const rho=0.50 s0=1.00 ns=7.11% gr=3.88% th=0.00%
+a const rho=0.50 s0=2.00 ns=2.11% gr=8.99% th=0.00%
+a const rho=0.50 s0=4.00 ns=0.00% gr=26.25% th=0.00%
+a const rho=0.80 s0=0.25 ns=13.69% gr=0.56% th=0.00%
+a const rho=0.80 s0=0.50 ns=12.76% gr=1.11% th=0.00%
+a const rho=0.80 s0=1.00 ns=10.95% gr=2.19% th=0.00%
+a const rho=0.80 s0=2.00 ns=7.50% gr=4.24% th=0.00%
+a const rho=0.80 s0=4.00 ns=2.53% gr=9.40% th=0.00%
+a const rho=0.95 s0=0.25 ns=14.25% gr=0.16% th=0.00%
+a const rho=0.95 s0=0.50 ns=13.88% gr=0.33% th=0.00%
+a const rho=0.95 s0=1.00 ns=13.13% gr=0.65% th=0.00%
+a const rho=0.95 s0=2.00 ns=11.67% gr=1.29% th=0.00%
+a const rho=0.95 s0=4.00 ns=8.87% gr=2.51% th=0.00%
+b const rho=-0.40 s0=0.25 ns=10.68% gr=1.05% th=0.03%
+b overlap rho=-0.40 s0=0.25 ns=11.22% gr=0.69% th=0.00% oa=0.00%
+b const rho=-0.40 s0=0.50 ns=6.70% gr=2.02% th=0.06%
+b overlap rho=-0.40 s0=0.50 ns=7.70% gr=1.34% th=0.00% oa=0.00%
+b const rho=-0.40 s0=1.00 ns=1.58% gr=5.91% th=0.00%
+b overlap rho=-0.40 s0=1.00 ns=2.56% gr=3.81% th=0.97% oa=0.00%
+b const rho=-0.40 s0=2.00 ns=0.04% gr=21.61% th=0.00%
+b overlap rho=-0.40 s0=2.00 ns=0.04% gr=15.52% th=0.00% oa=0.00%
+b const rho=-0.40 s0=4.00 ns=0.00% gr=56.15% th=0.00%
+b overlap rho=-0.40 s0=4.00 ns=0.00% gr=43.96% th=0.00% oa=0.00%
+b const rho=0.00 s0=0.25 ns=11.67% gr=1.12% th=0.01%
+b overlap rho=0.00 s0=0.25 ns=12.08% gr=0.80% th=0.00% oa=0.00%
+b const rho=0.00 s0=0.50 ns=8.54% gr=2.18% th=0.02%
+b overlap rho=0.00 s0=0.50 ns=9.32% gr=1.56% th=0.00% oa=0.00%
+b const rho=0.00 s0=1.00 ns=2.95% gr=4.29% th=0.20%
+b overlap rho=0.00 s0=1.00 ns=4.51% gr=3.29% th=0.31% oa=0.29%
+b const rho=0.00 s0=2.00 ns=0.28% gr=15.96% th=0.02%
+b overlap rho=0.00 s0=2.00 ns=0.28% gr=11.01% th=0.02% oa=0.02%
+b const rho=0.00 s0=4.00 ns=0.00% gr=44.30% th=0.00%
+b overlap rho=0.00 s0=4.00 ns=0.00% gr=34.44% th=0.00% oa=0.00%
+b const rho=0.50 s0=0.25 ns=13.06% gr=0.94% th=0.00%
+b overlap rho=0.50 s0=0.25 ns=13.30% gr=0.73% th=0.00% oa=0.00%
+b const rho=0.50 s0=0.50 ns=11.19% gr=1.85% th=0.00%
+b overlap rho=0.50 s0=0.50 ns=11.66% gr=1.44% th=0.00% oa=0.00%
+b const rho=0.50 s0=1.00 ns=7.65% gr=3.59% th=0.00%
+b overlap rho=0.50 s0=1.00 ns=8.53% gr=2.80% th=0.00% oa=0.00%
+b const rho=0.50 s0=2.00 ns=3.02% gr=8.67% th=0.00%
+b overlap rho=0.50 s0=2.00 ns=4.29% gr=6.87% th=1.24% oa=0.00%
+b const rho=0.50 s0=4.00 ns=0.34% gr=24.43% th=0.00%
+b overlap rho=0.50 s0=4.00 ns=0.34% gr=18.37% th=0.00% oa=0.00%
+b const rho=0.80 s0=0.25 ns=14.04% gr=0.54% th=0.00%
+b overlap rho=0.80 s0=0.25 ns=14.17% gr=0.44% th=0.00% oa=0.00%
+b const rho=0.80 s0=0.50 ns=13.12% gr=1.08% th=0.00%
+b overlap rho=0.80 s0=0.50 ns=13.36% gr=0.87% th=0.00% oa=0.00%
+b const rho=0.80 s0=1.00 ns=11.32% gr=2.12% th=0.00%
+b overlap rho=0.80 s0=1.00 ns=11.79% gr=1.72% th=0.00% oa=0.00%
+b const rho=0.80 s0=2.00 ns=7.89% gr=4.10% th=0.00%
+b overlap rho=0.80 s0=2.00 ns=8.77% gr=3.36% th=0.00% oa=0.00%
+b const rho=0.80 s0=4.00 ns=3.43% gr=9.66% th=0.00%
+b overlap rho=0.80 s0=4.00 ns=4.90% gr=8.12% th=1.42% oa=1.42%
+b const rho=0.95 s0=0.25 ns=14.61% gr=0.17% th=0.00%
+b overlap rho=0.95 s0=0.25 ns=14.66% gr=0.14% th=0.00% oa=0.00%
+b const rho=0.95 s0=0.50 ns=14.23% gr=0.33% th=0.00%
+b overlap rho=0.95 s0=0.50 ns=14.35% gr=0.28% th=0.00% oa=0.00%
+b const rho=0.95 s0=1.00 ns=13.50% gr=0.66% th=0.00%
+b overlap rho=0.95 s0=1.00 ns=13.73% gr=0.55% th=0.00% oa=0.00%
+b const rho=0.95 s0=2.00 ns=12.05% gr=1.30% th=0.00%
+b overlap rho=0.95 s0=2.00 ns=12.50% gr=1.09% th=0.00% oa=0.00%
+b const rho=0.95 s0=4.00 ns=9.26% gr=2.53% th=0.00%
+b overlap rho=0.95 s0=4.00 ns=10.12% gr=2.13% th=0.00% oa=0.00%
+showcase opt J=74.356 gap=0.00% mc=74.458+-0.319 sw=0.0446 osc=0.060
+showcase never-switch J=78.000 gap=4.90% mc=77.748+-0.417 sw=0.0000 osc=0.000
+showcase greedy J=80.394 gap=8.12% mc=80.441+-0.452 sw=0.1746 osc=0.439
+showcase threshold J=75.411 gap=1.42% mc=75.355+-0.333 sw=0.0259 osc=0.028
+showcase overlap-aware J=75.411 gap=1.42% mc=75.355+-0.333 sw=0.0259 osc=0.028
+worst case: rho 0.8 s0 4.0 {'opt': 74.35554585726706, 'ns': 78.00000000000043, 'gr': 80.39352825700598, 'th': 75.4108413769007, 'theta': np.float64(1.0), 'oa': 75.4108413769007, 'theta0': np.float64(1.0), 'alpha': 0.0, 'gap_ns': 0.0490138845827218, 'gap_gr': 0.08120419707938714, 'gap_th': 0.014192559646584954, 'gap_oa': 0.014192559646584954}

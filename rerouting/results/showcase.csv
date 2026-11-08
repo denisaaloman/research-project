@@ -1,0 +1,7 @@
+# worst case: rho=0.80 s0=4.00 theta=1.00 theta0=1.00 alpha=0.00
+policy,j_exact,gap_pct,j_mc,mc_halfwidth,switch_rate,oscillation_rate
+opt,74.356,0.00,74.458,0.319,0.0446,0.060
+never-switch,78.000,4.90,77.748,0.417,0.0000,0.000
+greedy,80.394,8.12,80.441,0.452,0.1746,0.439
+threshold,75.411,1.42,75.355,0.333,0.0259,0.028
+overlap-aware,75.411,1.42,75.355,0.333,0.0259,0.028
