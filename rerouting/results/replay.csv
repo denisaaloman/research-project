@@ -1,0 +1,6 @@
+policy,avg_cost_per_step,std_err,gap_pct_vs_optimal,switches_per_step
+optimal,3.710,0.007,0.00,0.0227
+never-switch,3.988,0.016,7.50,0.0000
+greedy,3.960,0.014,6.74,0.2191
+threshold,3.823,0.007,3.04,0.0340
+overlap-aware,3.742,0.008,0.88,0.0438
