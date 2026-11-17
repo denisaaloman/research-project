@@ -96,6 +96,8 @@ def evaluate(pol, cc, px, s, gamma):
     cpi = (s[ii, jj] + cc[jj, xx]).ravel()
     return np.linalg.solve(np.eye(n) - gamma * pp, cpi).reshape(k, nx)
 
+def _jstar(cc, s):
+    return np.argmin(cc[None] + 1e-9 * s[:, :, None], axis=1)   # (k, nx)
 
 def policy_iteration(cc, px, s, gamma):
     k, nx = cc.shape
@@ -119,18 +121,19 @@ def pol_never(k, nx):
     return np.tile(np.arange(k)[:, None], (1, nx))
 
 
-def pol_greedy(cc):
+def pol_greedy(cc, s):
     k, nx = cc.shape
-    return np.tile(cc.argmin(axis=0), (k, 1))
+    return _jstar(cc, s)
 
 
 def pol_threshold(cc, s, theta, alpha=0.0):
-    """switch to the cheapest path jstar if the gain exceeds theta + alpha * s(i, jstar)."""
     k, nx = cc.shape
-    jstar = cc.argmin(axis=0)
+    ii = np.arange(k)[:, None]
+    jstar = _jstar(cc, s)
     gain = cc - cc.min(axis=0)
-    sw = gain > theta + alpha * s[:, jstar]
-    return np.where(sw, jstar[None, :], np.arange(k)[:, None])
+    switching_penalty = s[ii, jstar]
+    sw = gain > theta + alpha * switching_penalty
+    return np.where(sw, jstar, ii)
 
 
 def cost_of(vv, mu):

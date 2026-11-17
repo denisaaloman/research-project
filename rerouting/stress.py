@@ -54,7 +54,7 @@ vv, popt = md.value_iteration(cc, px, s, gamma)
 jo = md.cost_of(vv, mu)
 jt, th, _ = md.best_threshold(cc, px, s, gamma, mu, thetas)
 jv, th0, al = md.best_threshold(cc, px, s, gamma, mu, th0s, alphas)
-pols = {"optimal": popt, "never-switch": md.pol_never(3, inst["nx"]), "greedy": md.pol_greedy(cc),
+pols = {"optimal": popt, "never-switch": md.pol_never(3, inst["nx"]), "greedy": md.pol_greedy(cc,s),
         "threshold": md.pol_threshold(cc, s, th), "overlap-aware": md.pol_threshold(cc, s, th0, al)}
 i0 = int(np.argmax(mu.sum(axis=1)))
 with open(os.path.join(res, "stress_showcase.csv"), "w") as f:

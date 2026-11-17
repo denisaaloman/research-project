@@ -31,7 +31,7 @@ def scenario(inst, s0, rho, model, with_oa):
     jopt = md.cost_of(vv, mu)
     res = {"opt": jopt}
     res["ns"] = md.cost_of(md.evaluate(md.pol_never(inst["k"], inst["nx"]), cc, px, s, gamma), mu)
-    res["gr"] = md.cost_of(md.evaluate(md.pol_greedy(cc), cc, px, s, gamma), mu)
+    res["gr"] = md.cost_of(md.evaluate(md.pol_greedy(cc, s), cc, px, s, gamma), mu)
     jt, th, _ = md.best_threshold(cc, px, s, gamma, mu, thetas)
     res["th"], res["theta"] = jt, th
     if with_oa:
@@ -108,7 +108,7 @@ _, _, rho, s0, _ = worst
 res, (px, s, mu, popt, p, q) = scenario(inst_b, s0, rho, "overlap", True)
 cc = inst_b["cc"]
 i0 = int(np.argmax(mu.sum(axis=1)))
-pols = {"opt": popt, "never-switch": md.pol_never(3, inst_b["nx"]), "greedy": md.pol_greedy(cc),
+pols = {"opt": popt, "never-switch": md.pol_never(3, inst_b["nx"]), "greedy": md.pol_greedy(cc,s),
         "threshold": md.pol_threshold(cc, s, res["theta"]),
         "overlap-aware": md.pol_threshold(cc, s, res["theta0"], res["alpha"])}
 with open(os.path.join(out, "showcase.csv"), "w") as f:

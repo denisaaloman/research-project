@@ -155,7 +155,7 @@ def main(tm, topology, src=None, dst=None, k=3, max_links=10, s0=2.0, quantile=0
     thetas, th0s, alphas = np.arange(0, 3.01, 0.25), np.arange(0, 2.01, 0.5), [0.0, 0.5, 1.0, 1.5, 2.0]
     th = md.best_threshold(cc, px, s, gamma, mu, thetas)[1]
     th0, al = md.best_threshold(cc, px, s, gamma, mu, th0s, alphas)[1:]
-    pols = {"optimal": popt, "never-switch": md.pol_never(inst["k"], inst["nx"]), "greedy": md.pol_greedy(cc),
+    pols = {"optimal": popt, "never-switch": md.pol_never(inst["k"], inst["nx"]), "greedy": md.pol_greedy(cc,s),
             "threshold": md.pol_threshold(cc, s, th), "overlap-aware": md.pol_threshold(cc, s, th0, al)}
     weights = 2 ** np.arange(m)
 

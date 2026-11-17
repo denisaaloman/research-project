@@ -17,7 +17,7 @@ def setup(inst, s0, rho, mod="const"):
 def test_zero_penalty_optimal_is_greedy():
     px, s, mu, _, _ = setup(inst2, 0.0, 0.5)
     vv, _ = md.value_iteration(inst2["cc"], px, s, gamma)
-    jg = md.cost_of(md.evaluate(md.pol_greedy(inst2["cc"]), inst2["cc"], px, s, gamma), mu)
+    jg = md.cost_of(md.evaluate(md.pol_greedy(inst2["cc"],s), inst2["cc"], px, s, gamma), mu)
     assert abs(md.cost_of(vv, mu) - jg) < 1e-6
 
 

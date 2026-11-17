@@ -1,0 +1,8 @@
+# pair 13->9, 3 paths, 10 links, 10772 intervals (7540 train / 3232 test), s0=4.00, congested above the 0.75 quantile
+# tuned: theta=1.00 theta0=1.00 alpha=0.00
+policy,avg_cost_per_step,gap_pct_vs_optimal,switches_per_step
+optimal,4.337,0.00,0.0201
+never-switch,5.107,17.75,0.0000
+greedy,4.314,-0.54,0.0439
+threshold,4.301,-0.83,0.0040
+overlap-aware,4.301,-0.83,0.0040

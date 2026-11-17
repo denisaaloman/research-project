@@ -33,7 +33,7 @@ cc = inst["cc"]
 vv, popt = md.value_iteration(cc, px, s, gamma)
 jt, th, _ = md.best_threshold(cc, px, s, gamma, mu, thetas)
 jo, th0, al = md.best_threshold(cc, px, s, gamma, mu, th0s, alphas)
-pols = {"optimal": popt, "never-switch": md.pol_never(3, inst["nx"]), "greedy": md.pol_greedy(cc),
+pols = {"optimal": popt, "never-switch": md.pol_never(3, inst["nx"]), "greedy": md.pol_greedy(cc,s),
         "threshold": md.pol_threshold(cc, s, th), "overlap-aware": md.pol_threshold(cc, s, th0, al)}
 print("tuned on training data: theta=%.2f theta0=%.2f alpha=%.2f" % (th, th0, al))
 
