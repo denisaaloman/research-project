@@ -4,10 +4,7 @@
 \usepackage{array}
 \usepackage{graphicx}
 \usepackage{float}
-% TODO: add here the Studia style package, exactly as in the journal's formatting example.
 
-% Fallback so that the file compiles before the Studia package is added.
-% Remove this line once the Studia package defines \subjclassCR.
 \providecommand{\subjclassCR}[1]{}
 
 \DeclareMathOperator*{\argmin}{arg\,min}
@@ -206,7 +203,7 @@ The hypotheses to be tested are:
 \textbf{H2:} the failure region of M2 contains the failure region of M1 (the same scenarios plus new ones).
 \textbf{H3:} OA reduces the gap of TH below $\varepsilon$ in the scenarios where TH fails.
 
-\textbf{Comparison with the literature and criteria of success.} The approach is compared with the literature by policy and by metric (Section~2.6). By policy: NS represents static routing without reaction~\cite{hopps2000}, GR a reactive rule that ignores the cost of changing, TH the threshold rules of FlowBender and of Kikuchi et al.~\cite{kabbani2014,kikuchi2025}, and OPT the optimal benchmark used by Anjali et al.\ and Hamouda~\cite{anjali2002,hamouda2020}. By metric: the optimality gap is compared with the values reported for threshold and index policies (1.40\% mean and 4.29\% maximum~\cite{hamouda2020}; below about 0.3\%~\cite{ninomora2008}). The proposed approach brings a benefit over the existing ones if the following criteria are met, and a result that does not meet them is reported as such:
+\textbf{Comparison with the literature and criteria of success.} The approach is compared with the literature by policy and by metric. By policy: NS represents static routing without reaction~\cite{hopps2000}, GR a reactive rule that ignores the cost of changing, TH the threshold rules of FlowBender and of Kikuchi et al.~\cite{kabbani2014,kikuchi2025}, and OPT the optimal benchmark used by Anjali et al.\ and Hamouda~\cite{anjali2002,hamouda2020}. By metric: the optimality gap is compared with the values reported for threshold and index policies (1.40\% mean and 4.29\% maximum~\cite{hamouda2020}; below about 0.3\%~\cite{ninomora2008}). The proposed approach brings a benefit over the existing ones if the following criteria are met, and a result that does not meet them is reported as such:
 \begin{itemize}
   \item \textbf{S1:} for M1, the gap of the tuned TH is not larger than the largest gap reported in the literature (4.29\%) in any scenario.
   \item \textbf{S2:} for M2, OA has fewer failures than TH at every tolerance $\varepsilon$ used, and its maximum gap is smaller (this is H3).
@@ -222,7 +219,7 @@ The experiments use synthetic data, in three forms.
   \item \textbf{Stress test (E3):} the parameters $(\pi_e, \rho_e)$ of every link are drawn at random in the ranges above, with a fixed seed.
   \item \textbf{Traces (E4):} the script samples 10 traces of 5000 steps of the 7 links of instance B, with a different $\pi_e$ (between $0.10$ and $0.53$) and $\rho_e$ (between $-0.03$ and $0.93$) for every link and a fixed seed. The true parameters are saved, so that the estimation can be checked. The first 5 traces are the training set and the last 5 the test set. The probabilities $p_e$ and $q_e$ are estimated from the transition counts of the training set, $\hat p_e = n_{01}/(n_{00}+n_{01})$ and $\hat q_e = n_{10}/(n_{10}+n_{11})$, where $n_{ab}$ is the number of transitions of link $e$ from state $a$ to state $b$ in the training set. The policies are tuned on the estimated chain, and every policy is replayed on the test traces starting from the initial path $i_0$.
 \end{itemize}
-The traces are generated from the same family of models that is estimated, so they show that the pipeline works, and not that the model describes a real network. The validation on real traffic matrices (G\'{E}ANT) follows the same pipeline; its preparation is described in Section~2.7 and a preliminary check on one source--destination pair is reported in Section~4. It is not one of the experiments E1--E6.
+The traces are generated from the same family of models that is estimated, so they show that the pipeline works, and not that the model describes a real network. The validation on real traffic matrices (G\'{E}ANT) follows the same pipeline; its preparation is described in Section~2.4 and a preliminary check on one source--destination pair is reported in Section~4. It is not one of the experiments E1--E6.
 
 \subsection{Validation of the Implementation}
 
