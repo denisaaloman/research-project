@@ -1,0 +1,699 @@
+\documentclass{amsart}
+
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{float}
+% TODO: add here the Studia style package, exactly as in the journal's formatting example.
+
+% Fallback so that the file compiles before the Studia package is added.
+% Remove this line once the Studia package defines \subjclassCR.
+\providecommand{\subjclassCR}[1]{}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\begin{document}
+
+\title[Threshold Rerouting with Path-Dependent Costs]{Threshold-Based Rerouting under Path-Dependent Switching Costs in Computer Networks}
+
+\author{ALOMAN DENISA-MARIA}
+
+
+\subjclassCR{C.2.1 [\textbf{Computer-Communication Networks}]: \textit{Network Architecture and Design}; G.3 [\textbf{Probability and Statistics}]: \textit{Markov processes}}
+\keywords{rerouting, switching cost, Markov decision process, threshold policy, path overlap}
+
+
+\maketitle
+\section{Introduction}
+\section{Related Work}
+\label{sec:related-work}
+
+\subsection{Threshold-Based Routing Policies}
+
+Anjali et al. \cite{anjali2002} formulate the MPLS label-switched path setup and re-dimensioning problem as a continuous-time Markov decision process. They show that, under certain conditions, the optimal policy has a threshold structure: a path or LSP configuration is changed when the observed traffic load crosses a certain threshold. To reduce the computational cost of determining the optimal policy, they also propose a sub-optimal least one-step cost policy. Their approach additionally uses filtering to avoid unnecessary changes caused by temporary traffic variations.
+
+Hamouda \cite{hamouda2020} studies admission and routing control in resource-constrained networks using a Markov decision process. The optimal policy is shown to have a state-dependent threshold structure. Since computing the optimal policy becomes expensive as the number of flow types increases, the paper proposes a heuristic based on this structure. The heuristic achieves an average reward deviation of 1.40\% from the optimum, with a maximum deviation of 4.29\% in the reported experiments.
+
+The present work follows the same general principle of replacing a computationally expensive optimal decision rule with a threshold-based policy. However, it considers a different source of complexity: the cost of switching depends on the relationship between the current and candidate paths. In particular, paths sharing links incur a smaller switching cost than link-disjoint paths. The proposed overlap-aware policy incorporates this information into the switching threshold, whereas the basic threshold policy uses a single threshold.
+
+The comparison focuses on the optimality gap of the threshold policies and their switching behaviour. The results are expected to be close to the optimum in the two-path, constant-penalty setting, where the threshold structure is already established in the literature. For overlapping paths, the overlap-aware policy is expected to reduce the optimality gap compared with a threshold that ignores path similarity.
+
+\subsection{Adaptive Multipath Routing}
+
+Kabbani et al. \cite{kabbani2014} propose FlowBender, a flow-level adaptive routing mechanism for datacenter networks. Instead of relying exclusively on static flow-to-path assignments, FlowBender uses end-host-driven rehashing to move flows when congestion is detected. The approach aims to improve latency and throughput while avoiding excessive packet reordering.
+
+Both FlowBender and the present work address the problem of adapting path assignments to changing network conditions. Their mechanisms and objectives, however, are different. FlowBender is designed as a practical datacenter load-balancing mechanism and evaluates performance mainly through latency and throughput. The present work studies a sequential routing decision problem in which switching itself has an explicit cost. It therefore evaluates not only the resulting routing cost, but also the frequency of path changes and the extent to which switching decisions are reversed.
+
+Consequently, FlowBender provides a related adaptive-routing reference, but its reported performance cannot be directly compared numerically with the optimality gaps in this work.
+
+\subsection{Switching Costs in Sequential Decision Problems}
+
+Switching penalties have also been studied in Markov decision and restless bandit models. For example, Niño-Mora \cite{ninomora2008} studies index policies for projects with switching costs and develops computational methods for evaluating such policies. This line of work is relevant because it treats switching as part of the decision-making objective rather than as a negligible implementation detail.
+
+The distinction in the present work is that switching costs are path-dependent: the cost of moving between two paths depends on how many links they share. This structure is particularly relevant when several candidate routes overlap. The proposed overlap-aware policy uses this relationship to distinguish between switching to a similar path and switching to a disjoint one.
+
+\subsection{Real-World Traffic Data}
+
+For the real-data evaluation, this work uses the GÉANT traffic-matrix dataset introduced by Uhlig et al. \cite{uhlig2006}. The dataset contains traffic matrices collected at 15-minute intervals over several months and was published to support the analysis of real network traffic and the evaluation of intradomain traffic-engineering methods.
+
+Using GÉANT provides a publicly documented source of network traffic rather than relying exclusively on synthetically generated traces. In this work, traffic measurements are mapped to link-level congestion states, which are then used to estimate the transition parameters of the routing model. The resulting policies are evaluated on a held-out portion of the trace.
+
+This evaluation is complementary to the synthetic experiments: it examines whether the proposed policies behave similarly when driven by measured traffic. However, the anonymized topology does not provide all information required for an exact reconstruction of the original routing environment. In particular, the link capacities and original IGP weights are unavailable in the topology used here. Therefore, the GÉANT experiment is treated as a preliminary trace-driven validation, not as a direct reproduction of the original network's routing decisions.
+
+\subsection{Expected Results}
+
+The comparison with existing work is organized around the following aspects:
+
+\begin{itemize}
+    \item \textbf{Optimality gap:} compared with the MDP-based threshold heuristics of Anjali et al. and Hamouda. The two-path, constant-penalty experiments are expected to reproduce the threshold behaviour reported in the literature. For overlapping paths, the overlap-aware policy is expected to reduce the gap relative to the basic threshold policy.
+    
+    \item \textbf{Switching frequency and oscillation:} evaluated to quantify the stability of routing decisions. These metrics complement the cost-based evaluation by showing whether a policy achieves a low cost through frequent path changes or avoids unnecessary reversals.
+    
+    \item \textbf{Adaptation to congestion:} compared conceptually with adaptive multipath routing approaches such as FlowBender. Both approaches react to changing network conditions, but the present work explicitly accounts for path-dependent switching costs.
+    
+    \item \textbf{Trace-driven performance:} evaluated using the GÉANT dataset. The main metrics are average routing cost and switching frequency on held-out traffic intervals. These results provide evidence about the behaviour of the policies on measured traffic, although they are not directly comparable with the latency and throughput results reported by FlowBender.
+\end{itemize}
+
+Overall, the main contribution relative to the cited approaches is the explicit modelling of path overlap in switching costs and the evaluation of a threshold policy that uses this information. The experiments investigate when a conventional threshold is sufficient and when accounting for path similarity improves the decision quality.
+
+\section{Modeling of the Experimental Part}
+\label{sec:model}
+
+This chapter defines the model on which all experiments are run: the network, the stochastic process of the path costs, the switching penalty, the decision problem, the policies that are compared, the metrics, the data, and the way the implementation is validated. Only the experiments that were actually run are described, and their results are in Section~4.
+
+\subsection{Network and Candidate Paths}
+
+Let $G = (V, E)$ be a directed graph with an origin $o$ and a destination $d$. A single flow must be routed from $o$ to $d$. Time is discrete, $t = 0, 1, 2, \dots$ The set of candidate paths is $\mathcal{P} = \{P_1, \dots, P_k\}$, where each $P_i \subseteq E$ is a simple $o$--$d$ path. The candidate set is given (for example the $k$ shortest paths) and is not part of the decision. Let $E' = P_1 \cup \dots \cup P_k$ be the set of links used by at least one candidate, and $m = \abs{E'}$.
+
+The overlap between two paths is measured with the Jaccard index:
+\begin{equation}
+  J(P_i, P_j) = \frac{\abs{P_i \cap P_j}}{\abs{P_i \cup P_j}},
+  \label{eq:jaccard}
+\end{equation}
+so $J = 1$ for identical paths and $J = 0$ for link-disjoint paths.
+
+\subsection{Stochastic Model of Path Costs}
+
+Each link $e \in E'$ has a congestion state $x_e(t) \in \{0, 1\}$, where $0$ means free and $1$ means congested. The states of the links are independent two-state Markov chains. Link $e$ has the transition probabilities
+\begin{equation}
+  \Pr[x_e(t+1) = 1 \mid x_e(t) = 0] = p_e, \qquad
+  \Pr[x_e(t+1) = 0 \mid x_e(t) = 1] = q_e.
+  \label{eq:markov}
+\end{equation}
+The stationary probability of congestion is $\pi_e = p_e/(p_e+q_e)$. The speed at which the state changes is controlled by the second eigenvalue of the chain, $\rho_e = 1 - p_e - q_e$: a value close to $1$ means slowly changing (autocorrelated) states, and a value close to $0$ or negative means fast fluctuations. The chain is specified by $(\pi_e, \rho_e)$ through $p_e = \pi_e (1-\rho_e)$ and $q_e = (1-\pi_e)(1-\rho_e)$. These are valid probabilities if and only if $\rho_e \ge 1 - 1/\max(\pi_e, 1-\pi_e)$. For $\pi_e = 0.3$ this means $\rho_e \ge -0.43$, so the smallest persistence used in the grid experiments is $-0.4$.
+
+In the grid experiments all links have the same $(\pi, \rho)$, and $\pi$ is kept fixed while $\rho$ is varied, so that the two effects are not mixed. In the stress test and in the traces the links have different parameters (Section~3.8).
+
+The cost of a link is $c_e(x) = c^0 + \delta x$, where $c^0$ is the free-flow cost and $\delta > 0$ is the congestion penalty; in all experiments $c^0 = \delta = 1$. The cost of a path is the sum of its link costs:
+\begin{equation}
+  C_i(x) = \sum_{e \in P_i} c_e(x_e) = c^0 \abs{P_i} + \delta \sum_{e \in P_i} x_e, \qquad x \in \{0,1\}^m.
+  \label{eq:pathcost}
+\end{equation}
+Since $c^0 = \delta = 1$, all path costs are integers. This has a consequence for threshold rules (Section~3.5): the cost difference between two paths takes only a few values, so a threshold has only a few distinct effective settings.
+
+\subsection{Path-Switching Penalty}
+
+When the flow moves from path $P_i$ to path $P_j$, a one-time penalty $s(i,j)$ is paid, with $s(i,i) = 0$. Two models are used, with the same maximum value $s_0$ so that they can be compared directly:
+\begin{itemize}
+  \item Constant penalty (M1): $s(i,j) = s_0$ for all $i \neq j$.
+  \item Overlap-based penalty (M2): $s(i,j) = s_0 \cdot (1 - J(P_i, P_j))$.
+\end{itemize}
+In M2 the penalty is proportional to the fraction of links that change, in the spirit of the reconfiguration overhead counted in changed links by Kikuchi et al.\ \cite{kikuchi2025}. Switching between similar paths is cheap, and switching between disjoint paths costs the full $s_0$. For link-disjoint paths the two models coincide. Because $1 - J \le 1$, the mean penalty of M2 is not larger than that of M1 for the same $s_0$, so a difference between the models mixes the effect of the structure with the effect of the size of the penalty.
+
+\subsection{Decision Problem as a Markov Decision Process}
+
+At each time step the controller observes the current path $i$ and the congestion vector $x$, and chooses the path $j$ for the current step ($j = i$ means keep). The MDP is defined by:
+\begin{itemize}
+  \item State: $z = (i, x) \in S = \{1, \dots, k\} \times \{0,1\}^m$, so $\abs{S} = k \cdot 2^m$.
+  \item Action: $j \in \{1, \dots, k\}$.
+  \item Cost: $c(z, j) = s(i,j) + C_j(x)$.
+  \item Transition: $(i,x) \to (j,x')$ with probability $\Pr(x,x') = \prod_{e \in E'} \Pr(x_e,x_e')$, with the link probabilities of \eqref{eq:markov}. The congestion process does not depend on the action.
+  \item Criterion: expected discounted cost with discount factor $\gamma \in (0,1)$; in all experiments $\gamma = 0.95$.
+\end{itemize}
+The optimal value function satisfies the Bellman equation:
+\begin{equation}
+  V^*(i,x) = \min_{j} \Bigl[\, s(i,j) + C_j(x) + \gamma \sum_{x'} \Pr(x,x')\, V^*(j,x') \Bigr].
+  \label{eq:bellman}
+\end{equation}
+The operator on the right-hand side is a $\gamma$-contraction in the sup norm, so value iteration converges to the unique solution $V^*$~\cite{puterman1994,bertsekas}. The iteration stops when $\norm{V_{n+1} - V_n}_\infty < \eta (1-\gamma)/(2\gamma)$, which guarantees that the resulting policy is $\eta$-optimal; the experiments use $\eta = 10^{-9}$. The optimal policy is the minimizing action in \eqref{eq:bellman}, and ties are broken in favour of keeping the current path.
+
+The initial state is drawn from a distribution $\mu$: the initial path $i_0$ is the path with the fewest links (ties: lowest index), and $x$ follows the stationary distribution of the chains. The performance of a policy with value function $V$ is $\Phi(\mu) = \sum_{z} \mu(z)\, V(z)$.
+
+\subsection{Policies Compared}
+
+For a state $(i,x)$ let $j^*(i,x)$ be the currently cheapest path, $j^*(i,x) \in \argmin_j C_j(x)$. If several paths have the same minimal cost, the one with the smallest switching penalty $s(i,j)$ is chosen, so $j^* = i$ whenever the current path is among the cheapest. Let $g(i,x) = C_i(x) - C_{j^*}(x) \ge 0$ be the gain of switching. The policies are:
+\begin{itemize}
+  \item Optimal (OPT): the minimizer of \eqref{eq:bellman}, computed by value iteration. It is the benchmark.
+  \item Never-switch (NS): always keep the current path.
+  \item Greedy (GR): always move to $j^*$, ignoring the penalty.
+  \item Static threshold (TH, parameter $\theta$): switch to $j^*$ if $g > \theta$, otherwise keep. It represents the rules used in practice~\cite{kikuchi2025,kabbani2014}.
+  \item Overlap-aware threshold (OA, parameters $\theta_0$, $\alpha$): switch to $j^*$ if $g > \theta_0 + \alpha \cdot s(i,j^*)$. For $\theta_0 = 0$ and $\alpha = 1$ this is the one-step lookahead rule (it pays the penalty only if it is recovered immediately), related to the least one-step cost policy of Anjali et al.~\cite{anjali2002}.
+\end{itemize}
+For TH and OA the parameters are tuned on a grid separately for every scenario, choosing the values that minimize $\Phi(\mu)$: $\theta \in \{0, 0.25, \dots, 3\}$, $\theta_0 \in \{0, 0.5, \dots, 2\}$ and $\alpha \in \{0, 0.5, 1, 1.5, 2\}$. This gives the best case for each family, so a bad result of a threshold policy comes from the structure of the rule and not from a poor choice of parameters.
+
+Two remarks limit how the results can be read. First, OA with $\alpha = 0$ is TH, so the OA family contains the TH family and OA can never be worse than TH on a grid that includes these values; the comparison is between a family with two parameters and one with one. Second, because path costs are integers, the gain $g$ takes only the values $0, 1, 2, 3$ on the instances used, so TH has at most four distinct members. Rules that need a memory, such as the hysteresis of FlowBender~\cite{kabbani2014}, require a counter in the state and are not part of this study.
+
+\subsection{Evaluation Metrics}
+
+For a stationary policy $\sigma$, the value function is computed exactly by policy evaluation, by solving the linear system:
+\begin{equation}
+  V^{\sigma} = c_{\sigma} + \gamma T_{\sigma} V^{\sigma}, \qquad
+  V^{\sigma} = (I - \gamma T_{\sigma})^{-1} c_{\sigma},
+  \label{eq:policyeval}
+\end{equation}
+where $c_\sigma$ is the vector of costs under $\sigma$ and $T_\sigma$ the transition matrix of the state under $\sigma$. This avoids the noise of simulation for the main results. The metrics are:
+\begin{itemize}
+  \item Optimality gap: $G(\sigma) = (\Phi^{\sigma} - \Phi^*)/\Phi^*$. The main metric.
+  \item Failure: a scenario is a failure of a policy family at tolerance $\varepsilon$ if the gap of its best tuned member exceeds $\varepsilon$. Results are reported for $\varepsilon = 5\%$ and $\varepsilon = 2\%$.
+  \item Switching rate: expected number of switches per time step, measured by Monte Carlo simulation (1000 runs of 300 steps).
+  \item Oscillation rate: fraction of switches that return to the path left at most $W = 5$ steps earlier, measured in the same simulation.
+  \item Average cost per step on a trace: used in the trace-driven evaluation (E4). It is not discounted, so it is not the same criterion as $\Phi$, and its gaps are close to but not equal to those of the exact evaluation.
+\end{itemize}
+
+\subsection{Experimental Design}
+
+The parameters of the experiments are the following; everything else is fixed ($c^0 = \delta = 1$, $\gamma = 0.95$).
+
+\begin{table}[ht]
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.22\textwidth}>{\raggedright\arraybackslash}p{0.38\textwidth}>{\raggedright\arraybackslash}p{0.28\textwidth}@{}}
+    \toprule
+    Parameter & Values & Purpose \\
+    \midrule
+    Penalty ratio $s_0/\delta$ & $0.25,\ 0.5,\ 1,\ 2,\ 4$ (grid); $0.5,\ 1,\ 2$ (stress test); $2$ (traces) & Size of the switching cost relative to the gain \\
+    Persistence $\rho$ & $-0.4,\ 0,\ 0.5,\ 0.8,\ 0.95$ with $\pi = 0.3$ (grid); random per link (stress test) & Speed of the changes of the link states \\
+    Penalty model & M1 (constant), M2 (overlap) & Effect of the path structure \\
+    Instance & A: $k = 2$ disjoint paths ($m = 4$); B: $k = 3$ paths, two of them sharing two links ($m = 7$) & Overlap structure \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The experiments are:
+\begin{itemize}
+  \item \textbf{E1, baseline:} instance A, model M1, the 25 scenarios of the grid $(s_0/\delta, \rho)$. Measures the gap of the tuned TH, GR and NS.
+  \item \textbf{E2, penalty and persistence sweep:} instance B, the same 25 scenarios, with M1 and with M2. Measures the gap of the tuned TH under both models and the gap of OA under M2, and draws the failure maps.
+  \item \textbf{E3, stress test:} instance B, 100 random scenarios (seed 1) with a different $(\pi_e, \rho_e)$ for every link, $\pi_e \in [0.1, 0.6]$ and $\rho_e \in [-0.1, 0.95]$, and $s_0 \in \{0.5, 1, 2\}$, with M1 and M2. Tests the case where the total cost of a path does not say everything about the state of the links.
+  \item \textbf{E4, trace-driven evaluation:} instance B, M2, $s_0 = 2$. The chains are estimated from training traces, the policies are tuned on the estimated chain, and they are replayed on test traces (Section~3.8).
+  \item \textbf{E5, adversarial search:} instance B, M2. 250 random scenarios with all $\pi_e \in [0.05, 0.95]$, valid $\rho_e$ and $s_0/\delta \in [0.25, 4]$, followed by local hill-climbing on the four worst. Looks for failures outside the ranges of E1--E3.
+  \item \textbf{E6, failure map over realistic parameters:} instance B, M2. Grid of 80 cells over $\pi_c$ and $s_0/\delta$, with $\pi_d = 0.1$ and the other links with $\pi = 0.3$ and $\rho = 0.5$.
+\end{itemize}
+
+The hypotheses to be tested are:
+\textbf{H1:} for M1 the best tuned threshold stays within $\varepsilon$ of the optimum.
+\textbf{H2:} the failure region of M2 contains the failure region of M1 (the same scenarios plus new ones).
+\textbf{H3:} OA reduces the gap of TH below $\varepsilon$ in the scenarios where TH fails.
+
+\textbf{Comparison with the literature and criteria of success.} The approach is compared with the literature by policy and by metric (Section~2.6). By policy: NS represents static routing without reaction~\cite{hopps2000}, GR a reactive rule that ignores the cost of changing, TH the threshold rules of FlowBender and of Kikuchi et al.~\cite{kabbani2014,kikuchi2025}, and OPT the optimal benchmark used by Anjali et al.\ and Hamouda~\cite{anjali2002,hamouda2020}. By metric: the optimality gap is compared with the values reported for threshold and index policies (1.40\% mean and 4.29\% maximum~\cite{hamouda2020}; below about 0.3\%~\cite{ninomora2008}). The proposed approach brings a benefit over the existing ones if the following criteria are met, and a result that does not meet them is reported as such:
+\begin{itemize}
+  \item \textbf{S1:} for M1, the gap of the tuned TH is not larger than the largest gap reported in the literature (4.29\%) in any scenario.
+  \item \textbf{S2:} for M2, OA has fewer failures than TH at every tolerance $\varepsilon$ used, and its maximum gap is smaller (this is H3).
+  \item \textbf{S3:} the oscillation rate of TH and of OA is lower than that of GR, at a cost that is not higher.
+\end{itemize}
+The comparison with the numbers of other papers is indicative only, since their models and instances differ from the ones used here. The criteria are evaluated on the experiments E1--E6.
+
+\subsection{Data}
+
+The experiments use synthetic data, in three forms.
+\begin{itemize}
+  \item \textbf{Grid (E1, E2):} no data file. The chains are the same for all links and the quantities are computed exactly from the model.
+  \item \textbf{Stress test (E3):} the parameters $(\pi_e, \rho_e)$ of every link are drawn at random in the ranges above, with a fixed seed.
+  \item \textbf{Traces (E4):} the script samples 10 traces of 5000 steps of the 7 links of instance B, with a different $\pi_e$ (between $0.10$ and $0.53$) and $\rho_e$ (between $-0.03$ and $0.93$) for every link and a fixed seed. The true parameters are saved, so that the estimation can be checked. The first 5 traces are the training set and the last 5 the test set. The probabilities $p_e$ and $q_e$ are estimated from the transition counts of the training set, $\hat p_e = n_{01}/(n_{00}+n_{01})$ and $\hat q_e = n_{10}/(n_{10}+n_{11})$, where $n_{ab}$ is the number of transitions of link $e$ from state $a$ to state $b$ in the training set. The policies are tuned on the estimated chain, and every policy is replayed on the test traces starting from the initial path $i_0$.
+\end{itemize}
+The traces are generated from the same family of models that is estimated, so they show that the pipeline works, and not that the model describes a real network. The validation on real traffic matrices (G\'{E}ANT) follows the same pipeline; its preparation is described in Section~2.7 and a preliminary check on one source--destination pair is reported in Section~4. It is not one of the experiments E1--E6.
+
+\subsection{Validation of the Implementation}
+
+The implementation is checked by seven automatic tests, six of them against the checks below:
+\begin{itemize}
+  \item Limit cases: for $s_0 = 0$ the optimal cost equals the greedy cost, and for a very large $s_0$ it equals the never-switch cost.
+  \item Solver agreement: value iteration and policy iteration give the same value function, for both penalty models.
+  \item Exact versus simulation: the Monte Carlo estimate of the cost of a threshold policy (4000 runs of 300 steps) lies within twice the half-width of its 95\% confidence interval around the exact value of \eqref{eq:policyeval}.
+  \item Optimality: no threshold policy with $\theta \in \{0, 0.5, \dots, 3\}$ has a lower cost than the optimal policy.
+  \item Known result: for $k = 2$ and M1, the states where the optimal policy switches have larger gains than the states where it keeps, which is the threshold structure reported in the literature~\cite{anjali2002,hamouda2020}.
+  \item Real-data pipeline: the script that converts traffic matrices and a topology into link states, estimates the chains, tunes and replays the policies runs end to end on a small fake dataset in the G\'{E}ANT format. It is a smoke test of the code and not a result.
+\end{itemize}
+The stress test (E3) is also a robustness check of the conclusions with respect to the parameters of the links. The topology is fixed (instance B), so robustness with respect to the topology is not tested.
+
+\section{Case Study}
+\label{sec:case-study}
+
+This chapter evaluates the proposed routing policies on synthetic
+instances and trace-driven data. The experiments compare the optimal
+MDP policy (OPT), never switching (NS), greedy routing (GR), the
+static threshold policy (TH), and the overlap-aware threshold policy
+(OA). The goal is to measure how close the threshold policies are to
+the optimal policy and when accounting for path overlap improves
+their performance.
+
+\subsection{Experimental Setup}
+
+Two network instances are considered, as defined in Section~3.1. Instance A contains two link-disjoint paths and is used to evaluate the constant switching-penalty model. Instance B contains three candidate paths, two of which share two links, allowing the evaluation of overlap-dependent switching costs.
+
+Unless otherwise specified, the experiments use $c^0 = \delta = 1$ and $\gamma = 0.95$. The main parameter grid consists of five switching-penalty ratios and five persistence values, resulting in 25 scenarios per configuration.
+
+The policies (OPT, NS, GR, TH, and OA) are evaluated using the metrics defined in Section~3.6. Threshold parameters are tuned separately for each scenario over the parameter grids specified in Section~3.5.
+\subsection{Data Collection and Preparation}
+
+The evaluation uses two data sources: synthetically generated link-state traces and a publicly available network traffic dataset.
+
+\paragraph{Synthetic data.}
+Synthetic traces are generated using independent two-state Markov chains, one for each network link. Each link alternates between an uncongested state (0) and a congested state (1), according to its transition probabilities. The parameters $\pi_e$ and $\rho_e$ control the congestion probability and temporal persistence of link $e$, respectively.
+
+Ten independent traces of 5,000 time steps each are generated using a fixed random seed. Each observation contains the binary state of all seven links in Instance B. The resulting dataset is stored in \texttt{data/traces.csv}, with columns identifying the run, time step, and link states ($l_0,\ldots,l_6$). The transition parameters used to generate the traces are also saved to allow reproducibility.
+
+For the trace-driven evaluation, the first five traces are used to estimate the transition probabilities, while the remaining five are reserved for testing. This separation prevents the test traces from being used during parameter estimation and policy tuning.
+
+\paragraph{Real network data.}
+The real-data evaluation uses the GÉANT traffic-matrix dataset published by Uhlig et al. \cite{uhlig2006}. It contains 10,772 traffic matrices collected at 15-minute intervals between January and April 2005. The associated anonymized topology contains 23 nodes and 37 links.
+
+The topology and traffic matrices are processed to construct link-level congestion traces. Since the published topology does not provide link capacities, all links are assigned equal weights and capacities for this preliminary experiment. Traffic is mapped onto the selected paths, and each link is classified as congested when its utilization exceeds its own 75th percentile, calculated using the training portion of the data.
+
+The time series is divided chronologically: the first 70\% of observations are used for parameter estimation, and the remaining 30\% for testing. This preserves the temporal order of the measurements and evaluates the policies on traffic observations not used during estimation.
+
+The resulting binary link-state traces are passed through the same estimation and policy-evaluation pipeline as the synthetic data. This makes it possible to examine whether the conclusions obtained from the controlled synthetic experiments also hold when the policies are driven by measured network traffic.
+
+\subsection{Implementation and Validation}
+\label{sec:valid}
+
+The experiments are implemented in Python using NumPy and
+Matplotlib. The MDP is solved using value iteration and policy
+iteration. Monte Carlo simulation is used to check the resulting
+costs independently.
+
+The implementation is validated with seven automated tests:
+\begin{itemize}
+    \item when the switching penalty is zero, OPT agrees with greedy
+    routing; for sufficiently large penalties, it agrees with
+    never-switch;
+    \item value iteration and policy iteration produce the same
+    value function under both penalty models;
+    \item the exact TH cost is consistent with the Monte Carlo
+    estimate and its 95\% confidence interval;
+    \item no threshold policy has a lower cost than OPT;
+    \item in the two-path, constant-penalty case, the optimal policy
+    has a threshold structure, as reported in previous work;
+    \item the real-data pipeline runs end-to-end on a small test
+    dataset.
+\end{itemize}
+
+
+\subsection{Results}
+
+\subsubsection{E1: Two Paths with Constant Switching Cost}
+
+Instance A is used to check the threshold policy in the simplest
+setting. Across all 25 scenarios, TH has an optimality gap of
+$0.00\%$ to two decimal places. This agrees with the threshold
+structure established for the two-path, constant-penalty case.
+
+GR has a mean gap of $4.90\%$, while NS has a mean gap of $7.15\%$.
+The result confirms that a threshold policy can reproduce the
+optimal decisions in this setting without solving the full MDP
+during operation.
+
+\subsubsection{E2: Overlapping Paths}
+
+Instance B introduces two partially overlapping paths and one
+disjoint path. The experiment compares the constant and
+overlap-dependent switching-penalty models.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+\hline
+Policy & Mean gap & Maximum gap & Scenarios above 5\% \\
+\hline
+TH, constant penalty & 0.01\% & 0.20\% & 0/25 \\
+TH, overlap penalty & 0.16\% & 1.42\% & 0/25 \\
+GR, overlap penalty & 3.42\% & -- & -- \\
+NS, overlap penalty & 8.17\% & -- & -- \\
+\hline
+\end{tabular}
+\caption{Optimality gaps on Instance B.}
+\label{tab:e2}
+\end{table}
+
+The overlap-dependent penalty increases the mean TH gap from
+$0.01\%$ to $0.16\%$ and the maximum gap from $0.20\%$ to
+$1.42\%$. However, all 25 scenarios remain below the $5\%$
+tolerance.
+
+The worst result occurs for $\rho=0.8$ and $s_0/\delta=4$.
+OA does not improve on TH in most scenarios in this experiment:
+it produces a lower gap in only 3 of the 25 scenarios. This
+suggests that overlap awareness is not automatically beneficial
+when the static threshold is already close to optimal.
+
+\subsubsection{E3: Random Stress Test}
+
+The next experiment tests the policies on 100 randomly generated
+scenarios on Instance B. Each link has an independently sampled
+congestion probability $\pi_e\in[0.1,0.6]$ and persistence
+$\rho_e\in[-0.1,0.95]$. The switching penalty is selected from
+$s_0\in\{0.5,1,2\}$.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+\hline
+Policy & Mean gap & Median gap & Maximum gap \\
+\hline
+TH, constant penalty & 0.60\% & 0.29\% & 3.63\% \\
+TH, overlap penalty & 0.74\% & 0.26\% & 4.59\% \\
+OA, overlap penalty & 0.30\% & 0.20\% & 1.15\% \\
+\hline
+\end{tabular}
+\caption{Optimality gaps over 100 random scenarios.}
+\label{tab:e3}
+\end{table}
+
+No policy exceeds the $5\%$ tolerance. Under the overlap-dependent
+model, TH has a maximum gap of $4.59\%$, while OA reduces it to
+$1.15\%$. OA also reduces the mean gap from $0.74\%$ to $0.30\%$.
+It performs better by more than $0.1$ percentage points in
+30 of the 100 scenarios.
+
+The results show that the overlap-aware threshold is more useful
+in heterogeneous scenarios than in the regular grid of E2.
+However, it does not improve every individual scenario.
+
+\subsubsection{E4: Trace-Driven Replay}
+
+A separate experiment checks whether the policies remain effective
+when decisions are replayed on generated traces instead of being
+evaluated only through their exact expected costs.
+
+Ten traces of 5,000 time steps are generated. The first five are
+used to estimate the transition probabilities and tune the
+thresholds. The remaining five are used for testing. The estimated
+transition probabilities have maximum absolute errors of
+$0.009$ for $p$ and $0.008$ for $q$.
+
+The selected parameters are $\theta=1$ for TH and
+$\theta_0=0$, $\alpha=0.5$ for OA.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+\hline
+Policy & Average cost & Gap & Switches/step \\
+\hline
+OPT & $3.710\pm0.007$ & 0.00\% & 0.023 \\
+NS  & $3.988\pm0.016$ & 7.50\% & 0.000 \\
+GR  & $3.895\pm0.011$ & 5.00\% & 0.174 \\
+TH  & $3.823\pm0.007$ & 3.04\% & 0.034 \\
+OA  & $3.742\pm0.008$ & 0.88\% & 0.044 \\
+\hline
+\end{tabular}
+\caption{Trace-driven replay results. Values are means and standard
+errors across the five test traces.}
+\label{tab:e4}
+\end{table}
+
+OA is closer to OPT than TH, with a gap of $0.88\%$ instead of
+$3.04\%$. Both threshold policies switch much less frequently than
+GR. The ordering of the policies is consistent with the stress
+test in E3.
+
+These results validate the estimation and replay pipeline on data
+generated from the assumed transition model. They do not establish
+that the independent-link model accurately describes real network
+traffic.
+
+\subsubsection{E5: Adversarial Scenario Search}
+
+Random scenarios may not expose the cases in which a static
+threshold performs poorly. E5 therefore searches for difficult
+parameter combinations on Instance B under the overlap-dependent
+penalty model.
+
+The search evaluates 250 random scenarios, with
+$\pi_e\in[0.05,0.95]$ and valid persistence values. It then applies
+local search to the four worst scenarios.
+
+The largest TH gap found is $14.57\%$. In the same scenario, OA
+reduces the gap to $1.84\%$.
+
+The difficult cases have an asymmetric structure: link $c$,
+which belongs only to $P_1$, has a high congestion probability
+(close to $0.94$), while link $d$, which belongs only to $P_2$,
+has a much lower probability (between approximately $0.1$ and
+$0.25$). The switching penalty is also high, with
+$s_0/\delta$ close to $4$.
+
+This is a case where one threshold must handle both switching
+between similar paths and switching to a disjoint path. The
+overlap-aware policy can use different effective switching
+thresholds for these decisions.
+
+\subsubsection{E6: Failure Region}
+
+E6 studies the effect of the congestion probability of link $c$
+and the switching penalty. The probability of link $d$ is fixed
+at $0.1$, the other link probabilities at $0.3$, and all
+persistence values at $0.5$.
+
+The experiment evaluates 80 combinations of $\pi_c$ and
+$s_0/\delta$.
+
+For TH, 15 of the 80 scenarios have a gap above $5\%$, and
+37 have a gap above $2\%$. For OA, the corresponding counts
+are 6 and 8. At low switching penalties,
+$s_0/\delta\leq1$, both policies have gaps below $0.1\%$.
+
+The failure region is therefore concentrated in scenarios with
+high switching penalties and asymmetric congestion probabilities.
+OA reduces the number of scenarios with large gaps, although
+some difficult cases remain.
+
+Figure~\ref{fig:failure-region} shows the resulting failure
+regions.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.75\linewidth]{failure_region_pi_s0.png}
+\caption{Failure regions of TH and OA as a function of the
+congestion probability of link $c$ and the switching penalty.}
+\label{fig:failure-region}
+\end{figure}
+
+\subsection{Preliminary Validation on GÉANT}
+\label{sec:geant}
+
+The final experiment uses traffic matrices from the GÉANT network
+dataset described by Uhlig et al. The dataset contains 10,772
+traffic matrices sampled every 15 minutes between January and
+April 2005. The anonymized topology contains 23 nodes and
+37 links.
+
+The topology is reconstructed from the available data. Since
+link capacities and original IGP weights are unavailable, all
+links are assigned unit weight and equal capacity. Candidate
+paths are then computed on this approximate topology.
+
+The first 70\% of the matrices are used for training and the
+remaining 30\% for testing, giving 7,540 training and 3,232
+testing intervals.
+
+Link congestion is represented by a binary state. A link is
+considered congested when its utilization exceeds its own
+75th percentile, calculated on the training data. Consequently,
+each link has a congestion probability of approximately $0.25$
+by construction.
+
+The selected source-destination pair is 13 to 9, with three
+candidate paths containing four links each and ten distinct links
+in their union. The paths were selected to allow comparison
+between alternatives with similar lengths. The link states are
+derived from network-wide traffic, rather than from the traffic
+of this individual source-destination pair.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+\hline
+Policy & $s_0=2$ & $s_0=4$ & $s_0=8$ \\
+\hline
+OPT & 4.241 & 4.337 & 5.107 \\
+NS  & 5.107 & 5.107 & 5.107 \\
+GR  & 4.238 & 4.314 & 4.465 \\
+TH  & 4.238 & 4.301 & 4.315 \\
+OA  & 4.238 & 4.301 & 4.315 \\
+\hline
+\end{tabular}
+\caption{Estimated-model costs on the GÉANT test period.}
+\label{tab:geant}
+\end{table}
+
+For $s_0=2$, NS has a cost approximately $20.4\%$ higher than
+OPT. At $s_0=4$, TH has a lower cost than GR while switching
+approximately eleven times less frequently. At $s_0=8$, the
+estimated MDP assigns no value to switching, while the policies
+replayed on the observed data still benefit from switching.
+
+The negative gaps obtained by comparing TH with the estimated
+OPT in some settings do not mean that TH is better than the
+optimal policy. OPT is optimal only for the assumed model, which
+treats link states as independent. The real traces contain
+correlated link behaviour: the mean absolute pairwise correlation
+is $0.38$, and the maximum is $0.84$. This difference can make
+the estimated optimal policy a poor benchmark for the observed
+data.
+
+A second source-destination pair, 11 to 7, was also tested at
+$s_0=2$. It produced the same qualitative result: GR, TH and
+OPT had a cost of $3.044$, while NS was approximately $42.8\%$
+more expensive.
+
+This experiment is preliminary. The anonymized topology does not
+provide the original capacities or IGP weights, and only a small
+number of source-destination pairs and penalty values are tested.
+The results demonstrate that the pipeline can be applied to
+public traffic data, but they are not sufficient to validate the
+model on real networks.
+
+\subsection{Discussion and Limitations}
+\label{sec:interp}
+
+The experiments show three main results.
+
+First, in the two-path constant-penalty setting, TH reproduces
+the optimal policy across all tested scenarios. This agrees with
+the threshold structure reported in previous work.
+
+Second, the static threshold remains close to optimal in the
+regular overlap-aware grid and in most randomly generated
+scenarios. However, E5 and E6 show that it can fail when switching
+costs are high and congestion probabilities differ substantially
+between overlapping paths. In these cases, OA reduces the gap
+considerably, although it does not eliminate every failure.
+
+Third, the trace-driven and GÉANT experiments show that the
+evaluation pipeline can be applied to time-series data. The
+GÉANT results also expose an important limitation: the
+independent-link assumption does not capture the correlations
+observed in real traffic.
+
+The experiments have the following limitations:
+\begin{itemize}
+    \item The synthetic experiments use a fixed topology with at
+    most seven links and three candidate paths.
+    \item The threshold parameters are tuned separately for each
+    scenario, giving the policies access to information that may
+    not be available in an online deployment.
+    \item OPT uses the full MDP state, while TH and OA make
+    decisions from path costs. The policies therefore do not have
+    the same information.
+    \item The replay traces are generated from the assumed
+    transition model, so they validate estimation and replay,
+    not the realism of that model.
+    \item The GÉANT topology is anonymized and lacks original
+    capacities and IGP weights. Only a small number of
+    source-destination pairs are evaluated.
+    \item The overlap-aware policy considers the overlap with the
+    cheapest alternative path and does not implement a separate
+    hysteresis mechanism.
+    \item The tolerance $\varepsilon=5\%$ is used as the main
+    acceptance criterion. Other tolerances may lead to different
+    conclusions.
+\end{itemize}
+
+
+\begin{thebibliography}{10}
+
+\bibitem{alizadeh2014}
+{\sc Alizadeh, M., et~al.}
+\newblock {CONGA}: Distributed congestion-aware load balancing for datacenters.
+\newblock In {\em Proceedings of the ACM SIGCOMM\/} (Chicago, IL, Aug. 2014),
+  pp.~503--514.
+
+\bibitem{anjali2002}
+{\sc Anjali, T., Scoglio, C., de~Oliveira, J.~C., Akyildiz, I.~F., and Uhl, G.}
+\newblock Optimal policy for label switched path setup in {MPLS} networks.
+\newblock {\em Computer Networks 39\/} (2002), 165--183.
+
+\bibitem{applegate2003}
+{\sc Applegate, D., and Cohen, E.}
+\newblock Making intra-domain routing robust to changing and uncertain traffic
+  demands: Understanding fundamental tradeoffs.
+\newblock In {\em Proceedings of the ACM SIGCOMM\/} (Karlsruhe, Germany, 2003),
+  pp.~313--324.
+
+\bibitem{asawa1996}
+{\sc Asawa, M., and Teneketzis, D.}
+\newblock Multi-armed bandits with switching penalties.
+\newblock {\em IEEE Transactions on Automatic Control 41}, 3 (Mar. 1996),
+  328--348.
+
+\bibitem{banks1994}
+{\sc Banks, J.~S., and Sundaram, R.~K.}
+\newblock Switching costs and the {Gittins} index.
+\newblock {\em Econometrica 62}, 3 (1994), 687--694.
+
+\bibitem{bertsekas}
+{\sc Bertsekas, D.~P.}
+\newblock {\em Dynamic Programming and Optimal Control}.
+\newblock Athena Scientific, Belmont, MA.
+
+\bibitem{fortz2000}
+{\sc Fortz, B., and Thorup, M.}
+\newblock Internet traffic engineering by optimizing {OSPF} weights.
+\newblock In {\em Proceedings of the IEEE INFOCOM\/} (Tel Aviv, Israel, 2000),
+  pp.~519--528.
+
+\bibitem{hamouda2020}
+{\sc Hamouda, E.}
+\newblock An optimal flow admission and routing control policy for resource
+  constrained networks.
+\newblock {\em Sensors 20}, 22 (Nov. 2020), 6566.
+
+\bibitem{hopps2000}
+{\sc Hopps, C.}
+\newblock Analysis of an equal-cost multi-path algorithm.
+\newblock RFC 2992, IETF, Nov. 2000.
+
+\bibitem{kabbani2014}
+{\sc Kabbani, A., Vamanan, B., Hasan, J., and Duchene, F.}
+\newblock {FlowBender}: Flow-level adaptive routing for improved latency and
+  throughput in datacenter networks.
+\newblock In {\em Proceedings of the ACM CoNEXT '14\/} (Sydney, Australia, Dec.
+  2014), pp.~149--159.
+
+\bibitem{kikuchi2025}
+{\sc Kikuchi, T., Sato, T., and Oki, E.}
+\newblock Dynamic packet flow allocation method considering reconfiguration
+  overhead with intermediate solutions in software-defined networks.
+\newblock {\em IEICE Transactions on Communications E108-B}, 7 (July 2025),
+  768--779.
+
+\bibitem{levering2022}
+{\sc Levering, N., Boon, M., Mandjes, M., and N{\'u}{\~n}ez-Queija, R.}
+\newblock A framework for efficient dynamic routing under stochastically
+  varying conditions.
+\newblock {\em Transportation Research Part B: Methodological\/} (2022).
+
+\bibitem{ninomora2008}
+{\sc Ni{\~n}o-Mora, J.}
+\newblock A faster index algorithm and a computational study for bandits with
+  switching costs.
+\newblock {\em INFORMS Journal on Computing 20}, 2 (2008), 255--269.
+
+\bibitem{puterman1994}
+{\sc Puterman, M.~L.}
+\newblock {\em Markov Decision Processes: Discrete Stochastic Dynamic
+  Programming}.
+\newblock Wiley, New York, 1994.
+
+\bibitem{uhlig2006}
+{\sc Uhlig, S., Quoitin, B., Balon, S., and Lepropre, J.}
+\newblock Providing public intradomain traffic matrices to the research
+  community.
+\newblock {\em ACM SIGCOMM Computer Communication Review 36}, 1 (Jan. 2006),
+  83--86.
+
+\end{thebibliography}
+
+\end{document}
